@@ -8,6 +8,22 @@
 #define SUCCESS      0
 #define MAX_NUM   100000
 
+#define DEBUG_TIME
+
+#ifdef DEBUG_TIME
+#define ENTER printf("%s:\t enter at \t%ld\n", __func__, clock())
+#define EXIT printf("%s:\t exit at \t%ld\n", __func__, clock())
+#else
+#define ENTER (NULL)
+#define EXIT (NULL)
+#endif 
+
+#define SWAP(x, y)	\
+	{float tmp; \
+	tmp = x;\
+	x = y;\
+	y = tmp;}
+
 int **train_array;
 int **test_array;
 float **knn_sqr;
@@ -23,7 +39,8 @@ int readTrainingData(void)
     char tmp[10000] = {0};
     char buffer[MAX_NUM] = {0};
     int i = 0, j = 0;
-    
+
+    ENTER;
     
     if( (fTrain = fopen("sat.trn", "r")) == NULL )
         return FALSE;
@@ -105,6 +122,8 @@ int readTrainingData(void)
     }
     
     fclose(fTrain);
+
+    EXIT;
 }
 int readTestData(void)
 {
@@ -112,7 +131,8 @@ int readTestData(void)
     char tmp[10000] = {0};
     char buffer[MAX_NUM] = {0};
     int i = 0, j = 0;
-    
+
+    ENTER;
     
     if( (fTest = fopen("sat.tst", "r")) == NULL )
         return FALSE;
@@ -142,7 +162,6 @@ int readTestData(void)
         
         test_tmp = 0;
         memset(buffer, 0, sizeof(buffer));
-          
     }
     	
     test_array = (int **)malloc(test_row * sizeof(int *));
@@ -194,11 +213,14 @@ int readTestData(void)
     }
     
     fclose(fTest);
+
+    EXIT;
 }
 
 int runKNN1(int test_num )
 {
 	char cmd[50];
+	
 	count = 0;
 	while(count < 1){
 		if( temp_prop[test_num][0] == test_array[test_num][36]){
@@ -209,18 +231,19 @@ int runKNN1(int test_num )
         }
 		count++;
 	}
+
 	return correct_count;
 }
 
 int runKNN(int test_num,int KNN)
 {
 	char cmd[50];
-    int num,count,i;
+	int num,count,i;
 	int ans,curr_ans,max;
-    int test[7];
-    int cur_ans=0;
+	int test[7];
+	int cur_ans=0;
 	int tmp_test=0;
-    
+
 		count =0;
 		for (i = 0; i < 7; i++) {
 			test[i]=0;
@@ -280,6 +303,8 @@ int runTest()
     float temp;
     int tmp_prop;
     int ans[36];   
+
+    ENTER;
    
     knn_sqr = (float **)malloc(test_row * sizeof(float *));
     
@@ -297,19 +322,22 @@ int runTest()
                 knn_value = knn_value + ans[i];
                   
             }
-            knn_sqr[test][train] = sqrt(knn_value);
+            knn_sqr[test][train] = sqrtf((float)knn_value);
             
         } 
     }     
+
+    EXIT;
 }
 
 int runKnn(int i,int KNN_num)
 {
-    int corrent;
-        if(KNN_num == 1)
-            corrent = runKNN1(i);
-        else 
-            corrent = runKNN(i,KNN_num);            
+    ENTER;
+
+    int corrent = (KNN_num == 1) ? runKNN1(i) : runKNN(i, KNN_num);
+    
+    EXIT;
+
     return corrent;        
 }
 
@@ -321,6 +349,9 @@ int runSequence(int KNN_num)/*TODO*/
     clock_t start, end;
     float time = 0;
     FILE *fp;
+    
+    ENTER;
+
     fp = fopen("test.txt","w");
     
     knn_temp = (float **)malloc(test_row * sizeof(float *));
@@ -334,7 +365,7 @@ int runSequence(int KNN_num)/*TODO*/
             knn_temp[i][j] = knn_sqr[i][j]; 
             temp_prop[i][j] = train_array[j][36];	
         }
-    } 
+    }
 
 //	Jamie test   
            
@@ -370,53 +401,29 @@ int runSequence(int KNN_num)/*TODO*/
     printf("corrent_rate = %.4f\n", corrent/2000.0);
             
   fclose(fp); 	
+  EXIT;
 }
 
-int main(int argc, char **argv)
-{
-    int KNN_num;
-    clock_t start_time, end_time;
-    clock_t train_start, train_end;
-    clock_t test_start, test_end;
-    clock_t run_start, run_end;
-    clock_t seq_start, seq_end;
-    float total_time = 0;
-    float train_time = 0;
-    float test_time = 0;
-    float run_time = 0;
-    float seq_time = 0;
-    switch(argc){
-       case 2:
-            KNN_num = atoi(argv[1]);
-            start_time = clock();
-            train_start = clock();
-            readTrainingData();  //loadTrainingData
-            train_end = clock();
-            test_start = clock();
-            readTestData();      //load Testing Data
-            test_end = clock();
-            run_start = clock();
-            runTest();           //計算距離值 
-            run_end =clock();
-            seq_start = clock();
-            runSequence(KNN_num);   //排序並投票 
-            seq_end = clock();      
-            end_time = clock();
-            break;
-    default:
-    	printf("usage: Weka.exe [KNN Num]\n");
-	break;
-    }
-    total_time = (float)(end_time - start_time)/CLOCKS_PER_SEC;
-    train_time = (float)(train_end - train_start)/CLOCKS_PER_SEC;
-    test_time = (float)(test_end - test_start)/CLOCKS_PER_SEC;
-    run_time = (float)(run_end - run_start)/CLOCKS_PER_SEC;
-    seq_time = (float)(seq_end - seq_start)/CLOCKS_PER_SEC;
-    printf("Time : %.4f sec \n", total_time);
-    printf("TRAIN Time : %.4f sec \n", train_time);
-    printf("TEST Time : %.4f sec \n", test_time);
-    printf("RUN Time : %.4f sec \n", run_time);
-    printf("SEQ Time : %.4f sec \n", seq_time);
-    system("pause");
-    return 0;
+int main(int argc, char **argv) {
+	int KNN_num;
+
+	ENTER;
+
+	switch(argc){
+		case 2:
+			KNN_num = atoi(argv[1]);
+			readTrainingData();
+			readTestData();
+			runTest();
+			runSequence(KNN_num);
+			runSort("quick");
+			break;
+		default:
+			printf("usage: Weka.exe [KNN Num]\n");
+			break;
+	}
+
+	EXIT;
+
+	return 0;
 }
