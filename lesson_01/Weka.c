@@ -330,6 +330,64 @@ int runTest()
     EXIT;
 }
 
+void quicksort(int len, float *number, int left, int right) { 
+	int i, j; 
+	float s;
+	if(left < right) { 
+		s = number[left]; 
+		i = left; 
+		j = right + 1; 
+
+		while(1) { 
+			while(i + 1 < len && number[++i] < s) ;  
+			 
+			while(j -1 > -1 && number[--j] > s) ;  
+			
+			if(i >= j) 
+				break; 
+			SWAP(number[i], number[j]); 
+		}
+		 
+		number[left] = number[j]; 
+		number[j] = s; 
+		quicksort(len, number, left, j-1);
+		quicksort(len, number, j+1, right);
+	} 
+}
+
+int saveData(float **data, int x, int y, char *name) {
+	FILE *fd = fopen(name, "w+");
+	if (fd == NULL) {
+		fprintf(stderr, "open file %s failed\n", name);
+		return -1;
+	}
+	
+	for (x; x>0; x--) {
+		for (y; y>0; y--)
+			fprintf(fd, "%f\t", data[x-1][y-1]);
+		fprintf(fd, "\n");
+	}
+	fclose(fd);
+}
+
+void runSort(char *type) {
+	int i = 0, j = 0;
+	int data_size = test_row * train_row * sizeof(float);
+	float **sort_data = (float **)malloc(data_size);
+	memcpy((void*)sort_data, (void*)knn_sqr, data_size);
+
+	ENTER;
+
+	if (!strcmp(type, "quick")) {
+		for (i; i<test_row; i++)
+			quicksort(train_row, sort_data[i], 0, train_row-1);
+		saveData(sort_data, test_row, train_row, "quick.txt");
+	}
+
+	EXIT;
+}
+
+
 int runKnn(int i,int KNN_num)
 {
     ENTER;
@@ -396,6 +454,7 @@ int runSequence(int KNN_num)/*TODO*/
         else 
             corrent = runKNN(i,KNN_num); 
 	}   
+	saveData(knn_temp, test_row, train_row, "bubble.txt");
          
     printf("You test %d KNN\n", KNN_num);
     printf("corrent_rate = %.4f\n", corrent/2000.0);
